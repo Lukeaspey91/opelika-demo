@@ -1,3 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Opelika 2029">
+<meta name="theme-color" content="#10140f">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
 <title>Opelika 2029</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -272,11 +285,47 @@
   .is-touch .alert span { display: none; }
   .is-touch .alert b { font-size: 13px; }
   @media (max-height: 520px) { .alert b { font-size: 12.5px; } .evt b { font-size: 12.5px; } .evt time { font-size: 13px; } .street { font-size: 11px; padding: 0 8px; } }
+  /* ---- update 8: phone layout ---- */
+  .touch { --bs: 56px; --bb: 90px; --bg: 10px; --bbase: 24px; }
+  .size-S .touch { --bs: 48px; --bb: 78px; } .size-L .touch { --bs: 66px; --bb: 104px; }
+  .touch .tbtns, .touch .dbtns { --small: var(--bs); --big: var(--bb); gap: var(--bg); }
+  .tb.run { width: calc(var(--bs) + 6px) !important; height: calc(var(--bs) + 6px) !important; right: calc(16px + var(--bs) + var(--bb) + var(--bg) + 12px + env(safe-area-inset-right, 0px)) !important; bottom: calc(var(--bbase) + (var(--bb) - var(--bs) - 6px) / 2 + env(safe-area-inset-bottom, 0px)) !important; }
+  /* USE only shows up when there's something to use */
+  .is-touch .tb.act { transition: opacity 0.15s, transform 0.15s; }
+  .is-touch .tb.act[disabled] { opacity: 0; transform: scale(0.6); pointer-events: none; }
+  /* floating stick */
+  .stickzone { display: none; position: absolute; left: 0; bottom: 0; width: 44%; height: 74%; pointer-events: auto; touch-action: none; }
+  .is-touch.float-stick .stickzone { display: block; }
+  .float-stick .stick { pointer-events: none; opacity: 0.55; transition: opacity 0.15s; }
+  .float-stick .stick.live { opacity: 1; }
+  .stick.run { border-color: #cfe3e8; box-shadow: 0 0 14px rgba(207,227,232,0.55); }
+  /* left-handed: stick on the right, buttons on the left */
+  .lefty .stickzone { left: auto; right: 0; }
+  .lefty .stick { left: auto; right: calc(20px + env(safe-area-inset-right, 0px)); }
+  .lefty .tbtns, .lefty .dbtns { right: auto; left: calc(16px + env(safe-area-inset-left, 0px)); grid-template-columns: var(--big) var(--small); }
+  .lefty .tbtns .tb.fire, .lefty .tbtns .tb.act, .lefty .dbtns .tb.gas { grid-column: 1; }
+  .lefty .tbtns #tHeal, .lefty .tbtns #tReload, .lefty .dbtns .tb.exit, .lefty .dbtns .tb.brake { grid-column: 2; }
+  .lefty .tbtns #tHeal { grid-row: 1; } .lefty .tbtns #tReload { grid-row: 2; }
+  .lefty .tb.run { right: auto !important; left: calc(16px + var(--bs) + var(--bb) + var(--bg) + 12px + env(safe-area-inset-left, 0px)); }
+  .lefty .tb.lfire { left: auto; right: calc(20px + 124px + 14px + env(safe-area-inset-right, 0px)); }
+  .fps { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(4px + env(safe-area-inset-bottom, 0px)); font: 500 10px var(--mono); color: #cfe3e8; background: rgba(0,0,0,0.45); padding: 1px 6px; pointer-events: none; white-space: nowrap; }
+  .topbtns { display: flex; gap: 6px; justify-content: flex-end; }
+  #setBtn { min-width: 0; padding-left: 9px; padding-right: 9px; }
+  @media (max-height: 520px) {
+    .touch { --bs: 48px; --bb: 76px; --bg: 8px; --bbase: 14px; }
+    .size-S .touch { --bs: 42px; --bb: 66px; } .size-L .touch { --bs: 56px; --bb: 90px; }
+    .lefty .stick { right: calc(16px + env(safe-area-inset-right, 0px)); }
+    .lefty .tb.lfire { right: calc(16px + 104px + 12px + env(safe-area-inset-right, 0px)); }
+  }
 </style>
+</head>
+<body>
+
 
 <div id="wrap">
   <canvas id="view"></canvas>
   <div class="hud" id="hud">
+    <div class="fps" id="fpsTxt" hidden></div>
     <div class="vignette" id="vig"></div>
     <div class="mini"><canvas id="mini" width="240" height="240"></canvas></div>
     <div class="banners">
@@ -299,7 +348,7 @@
       <div class="row"><span class="k" id="clock">Day 1 · 8 PM</span><span class="k" id="meds">Meds 1</span></div>
       <div class="row" id="fuelRow"><span class="k">Stamina</span><span class="k" id="fuelTxt">100%</span></div>
       <div class="bar fuel"><i id="fuelBar" style="width:100%"></i></div>
-      <div class="topbtns"><button class="hbtn" id="mapBtn" type="button">Map</button></div>
+      <div class="topbtns"><button class="hbtn" id="setBtn" type="button" aria-label="Settings">⚙</button><button class="hbtn" id="mapBtn" type="button">Map</button></div>
     </div>
     <div class="cross" id="cross"></div>
     <div class="prompt" id="prompt" hidden></div>
@@ -307,6 +356,7 @@
     <div class="feed" id="feed"></div>
 
     <div class="touch">
+      <div class="stickzone" id="stickZone"></div>
       <div class="stick" id="stick"><i id="knob"></i></div>
       <div class="tbtns">
         <button class="tb" id="tHeal" type="button">HEAL</button>
@@ -338,7 +388,7 @@
       </div>
       <div class="mside">
         <div class="mcard">
-          <h2>Territory <span><button class="btn" id="helpBtn" type="button">Controls</button> <button class="btn primary" id="closeMap" type="button">Back to game</button></span></h2>
+          <h2>Territory <span><button class="btn" id="setBtn2" type="button">Settings</button> <button class="btn" id="helpBtn" type="button">Controls</button> <button class="btn primary" id="closeMap" type="button">Back to game</button></span></h2>
           <div class="stats3">
             <div><span>Cash</span><b id="mCash">$0</b></div>
             <div><span>Income/hr</span><b id="mInc">$0</b></div>
@@ -580,6 +630,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   const LOWQ = /[?&]low\b/.test(location.search);
   const prCap = () => Math.max(1, Math.min(window.devicePixelRatio || 1, LOWQ ? 1 : 2, Math.sqrt(2.4e6 / Math.max(1, window.innerWidth * window.innerHeight))));
+  let QPR = 2;
   renderer.setPixelRatio(prCap());
   canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); if (window.__showErr) window.__showErr("the graphics ran out of memory and stopped (WebGL context lost). Reload the page, or add ?low"); });
   if (renderer.shadowMap) { renderer.shadowMap.enabled = !LOWQ; renderer.shadowMap.type = THREE.PCFShadowMap; }
@@ -589,7 +640,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   scene.fog = new THREE.Fog(0x0d120f, 25, 160);
   const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
   const hemi = new THREE.HemisphereLight(0x6f8a6a, 0x1a1c16, 0.7); scene.add(hemi);
-  function resize() { const w = window.innerWidth, h = window.innerHeight; if (!window.__lowered) renderer.setPixelRatio(prCap()); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setPixelRatio(Math.min(prCap(), QPR)); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
   window.addEventListener("resize", resize); resize();
   const maxAniso = renderer.capabilities && renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 4;
   const std = (c, extra) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.94, metalness: 0.02 }, extra || {}));
@@ -1984,6 +2035,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   function renderPanel(who) {
     const st = S.stash, box = $("panelBtns"); box.innerHTML = "";
     const btn = (label, sub, ok, fn) => { const b = document.createElement("button"); b.className = "btn pbtn"; b.type = "button"; b.disabled = !ok; b.innerHTML = `${label}<small>${sub}</small>`; b.addEventListener("click", () => { fn(); renderPanel(who); updateHud(); }); box.appendChild(b); };
+    if (panelKind === "settings") { settingsPanel(btn); return; }
     if (panelKind === "help") { $("panelTag").textContent = "Controls"; $("panelTitle").textContent = "How to play"; $("panelText").innerHTML = helpHtml(); return; }
     if (panelKind === "stash") {
       $("panelTag").textContent = "Tent city · your locker"; $("panelTitle").textContent = "Locker";
@@ -2028,7 +2080,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     const cv = $("mini"); if (!cv) return; const x = cv.getContext("2d"), W = cv.width, R = W / 2;
     x.clearRect(0, 0, W, W);
     x.save(); x.beginPath(); x.arc(R, R, R - 1, 0, Math.PI * 2); x.clip();
-    if (state.inside) { x.fillStyle = "#14180f"; x.fillRect(0, 0, W, W); x.fillStyle = "#c9c4b0"; x.font = '700 26px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.fillText("INSIDE", R, R + 8); x.restore(); return; }
+    if (state.inside) { drawMiniInside(x, W, R, now); return; }
     if (miniDirty || !miniBase) renderMiniBase();
     const yaw = player.yaw, th = -Math.PI / 2 - Math.atan2(-Math.cos(yaw), -Math.sin(yaw)), m = R / 58;
     x.translate(R, R); x.rotate(th); x.scale(m, m); x.translate(-player.pos.x, -player.pos.z);
@@ -2241,7 +2293,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   function buildInterior(p) {
     if (interior) { scene.remove(interior); interior.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
     interior = new THREE.Group(); scene.add(interior);
-    intCols = []; intWalls = []; intEnemies = []; loot = []; guards = [];
+    intCols = []; intWalls = []; intEnemies = []; loot = []; guards = []; intMap = { walls: [], props: [] };
     const T = TYPES[p.type], rng = mulberry(p.id * 7919 + 13);
     const small = p.type === "residence" || p.area < 230;
     const R = small ? 7 : 9, NX = small ? 2 : 3, NZ = small ? 2 : 3, H = 3.3;
@@ -2253,7 +2305,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(R * NX, R * NZ), std(0x1a1b18)); ceil.rotation.x = Math.PI / 2; ceil.position.y = H; interior.add(ceil);
     function wallBox(x1, z1, x2, z2) {
       const t = 0.3, w = Math.abs(x2 - x1) || t, d = Math.abs(z2 - z1) || t;
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, H, d), wallM); m.position.set((x1 + x2) / 2, H / 2, (z1 + z2) / 2); interior.add(m); intWalls.push(m);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, H, d), wallM); m.position.set((x1 + x2) / 2, H / 2, (z1 + z2) / 2); interior.add(m); intWalls.push(m); intMap.walls.push([m.position.x, m.position.z, w, d]);
       intCols.push(mkPoly([[m.position.x - w / 2, m.position.z - d / 2], [m.position.x + w / 2, m.position.z - d / 2], [m.position.x + w / 2, m.position.z + d / 2], [m.position.x - w / 2, m.position.z + d / 2]]));
       const base = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, 0.2, d + 0.02), trimM); base.position.set(m.position.x, 0.1, m.position.z); interior.add(base);
     }
@@ -2288,7 +2340,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
       if (rng() < 0.5 && T.props !== "crates" && T.props !== "tables") { const t = w; w = d; d = t; }
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), std(pc1)); m.position.set(x, h / 2, z); interior.add(m);
       const top = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 0.06, d * 0.9), std(pc2)); top.position.set(x, h + 0.03, z); interior.add(top);
-      intCols.push(mkPoly([[x - w / 2, z - d / 2], [x + w / 2, z - d / 2], [x + w / 2, z + d / 2], [x - w / 2, z + d / 2]])); intWalls.push(m);
+      intCols.push(mkPoly([[x - w / 2, z - d / 2], [x + w / 2, z - d / 2], [x + w / 2, z + d / 2], [x - w / 2, z + d / 2]])); intWalls.push(m); intMap.props.push([x, z, w, d]);
     }
     const q = small ? 1.8 : 2.6;
     for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const cx = -hx + i * R + R / 2, cz = -hz + j * R + R / 2; const count = 1 + Math.floor(rng() * 2); for (let n = 0; n < count; n++) { const qx = rng() < 0.5 ? -1 : 1, qz = rng() < 0.5 ? -1 : 1; if (i === entI && j === entJ && qz > 0) continue; prop(cx + qx * q, cz + qz * q); } }
@@ -2317,7 +2369,8 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
       const tag = tagSprite(c.name, "#F0A24A"); tag.position.y = 2.2; h.add(tag);
       h.position.set(doorX + (k - 1.5) * 1.6, 0, hz - 3.2); interior.add(h); guards.push({ h, cool: 1 + rnd() });
     });
-    return { spawnX: doorX, spawnZ: hz - 1.6, hz, doorX, rooms };
+    addExitMarker(doorX, hz);
+    return { spawnX: doorX, spawnZ: hz - 1.6, hz, hx, doorX, rooms };
   }
 
   // ================= derived =================
@@ -2458,6 +2511,8 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   $("panelClose").addEventListener("click", () => closePanel());
   $("closeMap").addEventListener("click", () => toggleMap());
   $("helpBtn").addEventListener("click", () => { toggleMap(); openPanel("help"); });
+  $("setBtn").addEventListener("click", () => { if (state.started && !state.dead && !state.panel && !state.map) openPanel("settings"); });
+  $("setBtn2").addEventListener("click", () => { toggleMap(); openPanel("settings"); });
 
   // ================= combat =================
   const raycaster = new THREE.Raycaster();
@@ -2983,7 +3038,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   const tmpP = new THREE.Vector3();
   function driveCar(dt) {
     const T = car.T;
-    const steer = clamp((keys.has("a") || keys.has("arrowleft") ? -1 : 0) + (keys.has("d") || keys.has("arrowright") ? 1 : 0) + moveVec.x + PAD.mv.x, -1, 1);
+    const steer = clamp((keys.has("a") || keys.has("arrowleft") ? -1 : 0) + (keys.has("d") || keys.has("arrowright") ? 1 : 0) + moveVec.x + PAD.mv.x + (SET.tilt ? TILT.x : 0), -1, 1);
     const gas = keys.has("w") || keys.has("arrowup") || pedals.gas || PAD.gas, brake = keys.has("s") || keys.has("arrowdown") || pedals.brake || PAD.brake;
     if (gas) car.speed += (car.speed < 0 ? 26 : T.acc) * dt;
     if (brake) car.speed -= (car.speed > 0.5 ? 30 : 9) * dt;
@@ -3085,7 +3140,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   const STAM = { v: 1, locked: false, on: false, blend: 0, uiT: 0, held: false };
   const SPRINT_DRAIN = 1 / 45, SPRINT_REGEN = 1 / 16, RUN_SPEED = 9.4, WALK_SPEED = 5.4;
   function sprintStep(dt, m, my) {
-    const want = STAM.on || STAM.held || keys.has("shift") || PAD.sprint;
+    const want = STAM.on || STAM.held || keys.has("shift") || PAD.sprint || STAM.edge;
     if (m < 0.1) STAM.on = false;
     const run = want && m > 0.5 && my > -0.3 && !STAM.locked && player.aimT <= 0.2 && player.reloading <= 0 && !state.driving;
     if (run) { STAM.v -= SPRINT_DRAIN * dt; if (STAM.v <= 0) { STAM.v = 0; STAM.locked = true; STAM.on = false; toast("OUT OF BREATH"); } }
@@ -3173,12 +3228,12 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     if (lampT <= 0 && lampLights.length) {
       lampT = 0.3; const [fx, fz] = focus();
       const near = LAMPS.map((q) => [q, (q[0] - fx) ** 2 + (q[1] - fz) ** 2]).sort((a, b) => a[1] - b[1]);
-      lampLights.forEach((L, i) => { const q = near[i]; if (q && n > 0.05 && !state.inside) { L.position.set(q[0][0], 4.4, q[0][1]); L.intensity = 1.25 * n; } else L.intensity = 0; });
+      lampLights.forEach((L, i) => { const q = near[i]; if (q && n > 0.05 && !state.inside) { L.position.set(q[0][0], 4.4, q[0][1]); L.intensity = lowLights ? 0 : 1.25 * n; } else L.intensity = 0; });
     }
     // headlights (and a searchlight under the helicopter)
     const on = state.driving && n > 0.15 && !state.inside;
     if (headlight) {
-      headlight.intensity = on ? 2.6 * n : 0;
+      headlight.intensity = on && !lowLights ? 2.6 * n : 0;
       if (on) {
         const fx = -Math.sin(car.yaw), fz = -Math.cos(car.yaw), [, hl] = VEH_DIM[car.kind] || [1, 2], y = (car.y || 0);
         if (state.flying) { headlight.position.set(car.x + fx * 1.5, y + 0.8, car.z + fz * 1.5); headlight.target.position.set(car.x + fx * 16, 0, car.z + fz * 16); }
@@ -3272,6 +3327,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     if (!RG) return;
     const [fx0, fz0] = focus(), hp = headGlow.geometry.attributes.position, tp = tailGlow.geometry.attributes.position;
     TRAFFIC.forEach((t, idx) => {
+      if (idx >= trafficCap) { t.m.visible = false; return; }
       if (!t.m.visible) {
         t.wait -= dt; if (t.wait > 0) return; t.wait = 1.5;
         const at = spawnOnRoad(t, 8, 70, 170, laneOff); if (!at) return;
@@ -3329,6 +3385,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     if (!RG) return;
     const [fx0, fz0] = focus();
     for (const w of WALKERS) {
+      if (WALKERS.indexOf(w) >= walkCap) { w.h.visible = false; continue; }
       const p = w.h.position;
       if (!w.h.visible) {
         w.wait -= dt; if (w.wait > 0) continue; w.wait = 1;
@@ -3575,7 +3632,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     const L = LB(), row = (a, b) => `<b>${a}</b> ${b}<br>`;
     return `<span class="hsec">Controller (${PAD.idx >= 0 ? LB().name + " connected" : "recommended"})</span><br>` + padRows().map(([a, b]) => row(a, b)).join("") +
       `<span class="hsec">Touch</span><br>` + row("Left stick", "walk or steer") + row("Drag the right side", "aim") + row("RUN", "sprint on or off. About 45 seconds of running, then you need about 16 seconds to catch your breath") +
-      row("FIRE / USE / HEAL / RLD", "shoot, interact, medkit, reload. Reloading also happens by itself") + row("In vehicles", "left thumb steers and fires, right thumb GAS, BRAKE, EXIT. In the helicopter they turn into UP and DOWN") +
+      row("FIRE / USE / HEAL / RLD", "shoot, interact, medkit, reload. Reloading also happens by itself") + row("In vehicles", "left thumb steers and fires, right thumb GAS, BRAKE, EXIT. In the helicopter they turn into UP and DOWN") + row("Settings (gear button)", "floating stick, push the stick to the edge to run, button size, left-handed layout, tilt to steer, graphics") +
       `<span class="hsec">Pair a controller with your iPhone</span><br>` +
       row("PS5", "hold Create + PS until the light bar flashes. PS4: hold Share + PS") + row("Xbox", "hold the pair button on top until the logo flashes fast") +
       row("Then", "iPhone Settings → Bluetooth → tap the controller under Other Devices, come back here and press any button");
@@ -3593,6 +3650,141 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     if (!state.started || state.map || state.panel || state.dead) return;
     if (k === "shift" || k === " " || k === "c") { keys.add(k); if (k === " ") e.preventDefault(); }
   });
+  // ================= update 8: phone layout settings, adaptive graphics, inside-building map =================
+  // ---- settings (this phone only) ----
+  const SET_KEY = "opelika-2029-settings";
+  const SET = { floatStick: true, edgeRun: true, size: "M", lefty: false, tilt: 0, gfx: "auto", fps: false };
+  try { Object.assign(SET, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (_) {}
+  function saveSet() { try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (_) {} }
+  function applySettings() {
+    const b = document.body.classList;
+    b.toggle("float-stick", !!SET.floatStick); b.toggle("lefty", !!SET.lefty);
+    b.remove("size-S", "size-L"); if (SET.size !== "M") b.add("size-" + SET.size);
+    $("fpsTxt").hidden = !SET.fps;
+    if (SET.gfx === "high") setQ(0); else if (SET.gfx === "low") setQ(2);
+  }
+
+  // ---- graphics quality: drops resolution and crowds when the phone struggles, comes back when it's smooth ----
+  const QNAMES = ["High", "Medium", "Low"];
+  const Q = { level: 0, sum: 0, n: 0, t: 0, good: 0, hitches: 0, worst: 0, last: 0, fps: 0, fT: 0, fN: 0 };
+  let trafficCap = N_TRAFFIC, walkCap = N_WALK;
+  function setQ(l) {
+    l = clamp(l, 0, 2); const changed = l !== Q.level; Q.level = l;
+    QPR = [2, 1.5, 1][l]; renderer.setPixelRatio(Math.min(prCap(), QPR)); resize();
+    trafficCap = l >= 2 ? Math.ceil(N_TRAFFIC / 2) : N_TRAFFIC; walkCap = l >= 2 ? Math.ceil(N_WALK / 2) : N_WALK;
+    lowLights = l >= 2;
+    // shadows only change when you pick Low or High yourself (switching them makes every material rebuild, which stalls a phone)
+    if (moon && moon.shadow && !LOWQ) { const want = SET.gfx === "low" ? false : true; if (moon.castShadow !== want) moon.castShadow = want; }
+    return changed;
+  }
+  let lowLights = false;
+  function qualityStep(rawDt) {
+    if (document.hidden) { Q.last = 0; return; }
+    if (rawDt > 0.25 && Q.last) { Q.hitches++; Q.worst = Math.max(Q.worst, Math.round(rawDt * 1000)); }
+    Q.last = 1;
+    Q.fN++; Q.fT += rawDt; if (Q.fT >= 0.5) { Q.fps = Math.round(Q.fN / Q.fT); Q.fN = 0; Q.fT = 0; if (SET.fps) $("fpsTxt").textContent = `${Q.fps} fps · ${QNAMES[Q.level]}${Q.hitches ? ` · ${Q.hitches} stalls (worst ${Q.worst} ms)` : ""}`; }
+    if (SET.gfx !== "auto" || !state.started) return;
+    Q.sum += Math.min(rawDt, 0.2); Q.n++; Q.t += rawDt;
+    if (Q.t < 3) return;
+    const avg = Q.sum / Q.n; Q.sum = Q.n = Q.t = 0;
+    if (avg > 0.038 && Q.level < 2) { setQ(Q.level + 1); Q.good = 0; }
+    else if (avg < 0.021) { if (++Q.good >= 4 && Q.level > 0) { setQ(Q.level - 1); Q.good = 0; } }
+    else Q.good = 0;
+  }
+
+  // ---- floating stick: it goes wherever your left thumb lands ----
+  const zone = $("stickZone");
+  zone.addEventListener("pointerdown", (e) => {
+    if (!SET.floatStick || stickId !== null || !state.started) return;
+    e.preventDefault(); stickId = e.pointerId; try { zone.setPointerCapture(e.pointerId); } catch (_) {}
+    const r = stick.getBoundingClientRect(), w = r.width, h = r.height;
+    const x = clamp(e.clientX, w / 2 + 6, window.innerWidth - w / 2 - 6), y = clamp(e.clientY, h / 2 + 6, window.innerHeight - h / 2 - 6);
+    stick.style.left = (x - w / 2) + "px"; stick.style.right = "auto"; stick.style.bottom = (window.innerHeight - y - h / 2) + "px";
+    stickC = { x, y }; stick.classList.add("live"); stickMove(e);
+  });
+  zone.addEventListener("pointermove", (e) => stickMove(e));
+  const zoneEnd = (e) => { if (e.pointerId !== stickId) return; stickEnd(e); stick.style.left = stick.style.right = stick.style.bottom = ""; stick.classList.remove("live"); };
+  zone.addEventListener("pointerup", zoneEnd); zone.addEventListener("pointercancel", zoneEnd); zone.addEventListener("lostpointercapture", zoneEnd);
+  let edgeHold = 0;
+
+  // ---- tilt to steer (asks the phone's permission the first time) ----
+  const TILT = { x: 0 };
+  window.addEventListener("devicemotion", (e) => {
+    if (!SET.tilt) { TILT.x = 0; return; }
+    const g = e.accelerationIncludingGravity; if (!g) return;
+    const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    let v = ang === 90 ? g.y : ang === -90 || ang === 270 ? -g.y : g.x; v = (v || 0) * (SET.tilt === 2 ? -1 : 1);
+    TILT.x = Math.abs(v) < 0.6 ? 0 : clamp((v - Math.sign(v) * 0.6) / 4, -1, 1);
+  });
+  function askMotion() {
+    try { if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) DeviceMotionEvent.requestPermission().then((r) => { if (r !== "granted") { SET.tilt = 0; saveSet(); toast("TILT NEEDS MOTION PERMISSION"); } }).catch(() => {}); } catch (_) {}
+  }
+  function settingsPanel(btn) {
+    $("panelTag").textContent = "Settings · this phone"; $("panelTitle").textContent = "Controls and graphics";
+    $("panelText").textContent = `Graphics right now: ${QNAMES[Q.level]}, ${Q.fps || "–"} fps. ${Q.hitches ? `${Q.hitches} long pauses so far (worst ${Q.worst} ms).` : "No long pauses so far."}`;
+    const set = (k, v) => { SET[k] = v; saveSet(); applySettings(); };
+    btn("Floating stick", SET.floatStick ? "On · it goes where your thumb lands" : "Off · fixed in the corner", true, () => set("floatStick", !SET.floatStick));
+    btn("Push stick to run", SET.edgeRun ? "On · push to the edge to sprint" : "Off · RUN button only", true, () => set("edgeRun", !SET.edgeRun));
+    btn("Button size", { S: "Small", M: "Medium", L: "Large" }[SET.size], true, () => set("size", { S: "M", M: "L", L: "S" }[SET.size]));
+    btn("Left-handed", SET.lefty ? "On · stick right, buttons left" : "Off", true, () => set("lefty", !SET.lefty));
+    btn("Tilt to steer", ["Off", "On", "On, reversed"][SET.tilt || 0], true, () => { set("tilt", ((SET.tilt || 0) + 1) % 3); if (SET.tilt) askMotion(); });
+    btn("Graphics", { auto: "Auto · adjusts to your phone", high: "High", low: "Low · smoother, saves battery" }[SET.gfx], true, () => { set("gfx", { auto: "high", high: "low", low: "auto" }[SET.gfx]); if (SET.gfx === "auto") setQ(0); });
+    btn("Show FPS", SET.fps ? "On" : "Off", true, () => set("fps", !SET.fps));
+  }
+
+  // ---- inside buildings: a floor map with the way out, and a glowing EXIT over the door ----
+  let intMap = { walls: [], props: [] };
+  const exitTex = canvasTex(256, 96, (x, W, H) => { x.fillStyle = "rgba(10,40,16,0.85)"; x.fillRect(8, 8, W - 16, H - 16); x.strokeStyle = "#7dff8a"; x.lineWidth = 5; x.strokeRect(8, 8, W - 16, H - 16); x.fillStyle = "#9dffa8"; x.font = '700 58px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("EXIT ▼", W / 2, H / 2 + 3); });
+  const exitMat = new THREE.SpriteMaterial({ map: exitTex, depthTest: false, transparent: true });
+  const exitGlowMat = new THREE.MeshBasicMaterial({ map: poolTex, color: 0x6dff7a, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
+  function addExitMarker(doorX, hz) {
+    const s = new THREE.Sprite(exitMat); s.scale.set(1.7, 0.64, 1); s.position.set(doorX, 2.55, hz - 0.35); s.renderOrder = 9; s.raycast = () => {}; interior.add(s);
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), exitGlowMat); g.rotation.x = -Math.PI / 2; g.position.set(doorX, 0.03, hz - 1.0); g.raycast = () => {}; interior.add(g);
+  }
+  function drawMiniInside(x, W, R, now) {
+    const L = layoutInfo; if (!L) { x.restore(); return; }
+    const hx = L.hx || 12, hz = L.hz, yaw = player.yaw, th = -Math.PI / 2 - Math.atan2(-Math.cos(yaw), -Math.sin(yaw)), m = R / 15;
+    x.fillStyle = "#11140f"; x.fillRect(0, 0, W, W);
+    x.save(); x.translate(R, R); x.rotate(th); x.scale(m, m); x.translate(-player.pos.x, -player.pos.z);
+    x.fillStyle = "#3a3d33"; x.fillRect(-hx, -hz, hx * 2, hz * 2);
+    x.fillStyle = "#5b5a4c"; for (const [cx, cz, w, d] of intMap.props) x.fillRect(cx - w / 2, cz - d / 2, w, d);
+    x.fillStyle = "#d8d2bc"; for (const [cx, cz, w, d] of intMap.walls) x.fillRect(cx - w / 2 - 0.08, cz - d / 2 - 0.08, w + 0.16, d + 0.16);
+    for (const l of loot) if (!l.taken) { x.fillStyle = "#ffd36a"; x.fillRect(l.m.position.x - 0.35, l.m.position.z - 0.35, 0.7, 0.7); }
+    for (const g of guards) { x.fillStyle = "#F0A24A"; x.beginPath(); x.arc(g.h.position.x, g.h.position.z, 0.5, 0, Math.PI * 2); x.fill(); }
+    for (const e of intEnemies) if (!e.dead) { x.fillStyle = e.robot ? "#4fd1e8" : "#E0413A"; x.beginPath(); x.arc(e.h.position.x, e.h.position.z, 0.6, 0, Math.PI * 2); x.fill(); }
+    const pulse = 0.5 + (Math.sin(now * 5) + 1) * 0.35;
+    x.fillStyle = "#6dff7a"; x.globalAlpha = 0.45; x.beginPath(); x.arc(L.doorX, hz, 1.6 + pulse, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1; x.fillRect(L.doorX - 1.2, hz - 0.35, 2.4, 0.7);
+    x.restore();
+    // the way out, pinned to the rim when it's off the map
+    const dx = L.doorX - player.pos.x, dz = hz - player.pos.z, d = Math.hypot(dx, dz);
+    const vx = dx * Math.cos(th) - dz * Math.sin(th), vz = dx * Math.sin(th) + dz * Math.cos(th), vl = Math.hypot(vx, vz) || 1;
+    if (d * m > R - 14) { const px = R + vx / vl * (R - 13), pz = R + vz / vl * (R - 13); x.save(); x.translate(px, pz); x.rotate(Math.atan2(vz, vx) + Math.PI / 2); x.fillStyle = "#6dff7a"; x.beginPath(); x.moveTo(0, -10); x.lineTo(8, 7); x.lineTo(-8, 7); x.closePath(); x.fill(); x.restore(); }
+    else { x.fillStyle = "#c8ffd0"; x.font = '700 18px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("EXIT", R + vx * m, R + vz * m - 14); }
+    x.restore();
+    x.fillStyle = "#F0A24A"; x.strokeStyle = "#111"; x.lineWidth = 2; x.beginPath(); x.moveTo(R, R - 11); x.lineTo(R + 8, R + 8); x.lineTo(R, R + 3); x.lineTo(R - 8, R + 8); x.closePath(); x.fill(); x.stroke();
+    x.fillStyle = "rgba(0,0,0,0.6)"; x.fillRect(R - 30, W - 30, 60, 20); x.fillStyle = "#e6e8de"; x.font = '600 14px "Barlow Condensed", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(`EXIT ${Math.round(d)} m`, R, W - 20);
+  }
+
+  // ---- load everything once behind the start screen, so nothing stalls the first time it shows up ----
+  function prewarm() {
+    const saved = [];
+    city.traverse((o) => { if (o.isMesh || o.isPoints || o.isSprite) { saved.push([o, o.frustumCulled, o.visible]); o.frustumCulled = false; } });
+    const was = nightLitOn; nightLitOn = true; for (const id of NIGHT_LIT) setPlaceLook(places[id]);
+    for (const t of TRAFFIC) t.m.visible = true; for (const w of WALKERS) w.h.visible = true;
+    try { renderer.render(scene, camera); } catch (_) {}
+    nightLitOn = was; for (const id of NIGHT_LIT) setPlaceLook(places[id]);
+    for (const [o, f, v] of saved) { o.frustumCulled = f; o.visible = v; }
+  }
+
+  let lastT8 = 0;
+  function upd8() {
+    const now = performance.now(), raw = lastT8 ? (now - lastT8) / 1000 : 0.016; lastT8 = now;
+    qualityStep(raw);
+    const dt = Math.min(0.05, raw);
+    STAM.edge = false;
+    if (SET.edgeRun && stickId !== null && !state.driving && Math.hypot(moveVec.x, moveVec.y) > 0.96) { edgeHold += dt; STAM.edge = edgeHold > 0.22; } else edgeHold = 0;
+    stick.classList.toggle("run", STAM.edge && !STAM.locked);
+  }
   // ================= loop =================
   const clock = new THREE.Clock();
   let hourAcc = 0;
@@ -3720,7 +3912,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   let hudT = 0, promptT = 0, skyT = 0, perfN = 0, perfSum = 0, perfDone = false;
   // if the phone struggles in the first seconds, drop shadows and render at a lower resolution
   function perfCheck(dt) {
-    if (perfDone) return; perfN++; if (perfN < 30) return; perfSum += dt;
+    return; perfN++; if (perfN < 30) return; perfSum += dt;
     if (perfN >= 210) { perfDone = true; const avg = perfSum / 180; if (avg > 0.036) { if (moon) moon.castShadow = false; renderer.setPixelRatio(1); resize(); window.__lowered = true; } }
   }
   let frameErr = null;
@@ -3729,7 +3921,7 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   function frame() { requestAnimationFrame(frame); try { frameInner(); } catch (e) { if (!frameErr) { frameErr = e; reportErr(e, "while running"); } } }
   function frameInner() {
     const dt = Math.min(0.05, clock.getDelta()), now = clock.elapsedTime;
-    pollPad(dt);
+    pollPad(dt); upd8();
     const sideways = !(isTouch && portraitMQ.matches);
     if (state.started && !state.map && !state.panel && !state.dead && sideways) {
       updatePlayer(dt);
@@ -3769,10 +3961,10 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
     toast("OPELIKA · 2029");
   }
 
-  window.__nb = { S: () => S, player, places, car, state, enterPlace, claim, damageEnemy, intEnemies: () => intEnemies, cityEnemies: () => cityEnemies, rivalTurn, autoResolve, toggleMap, enterCar, exitCar, gameHour, HOME_ID, HQ_ID, SITES, TRAIN, npcs, lockers, startTrain, derail, endTrain, openCrate, openPanel, closePanel, inSafe, interact, updatePrompt, eventBanner, railPose, shoot, nearBody, lootBody, PAD, pollPad, vehicles, VT, STAM, TRAFFIC, WALKERS, raidMem, melee, leavePlace, nearVehicle, heli: () => HELI, camps, LAMPS: () => LAMPS, NIGHT_LIT, nightLights, applySky, padTypeOf, LB, staminaUi, borrowTraffic, nearTraffic, updateHeli, YOURS: () => YOURS };
+  window.__nb = { S: () => S, player, places, car, state, enterPlace, claim, damageEnemy, intEnemies: () => intEnemies, cityEnemies: () => cityEnemies, rivalTurn, autoResolve, toggleMap, enterCar, exitCar, gameHour, HOME_ID, HQ_ID, SITES, TRAIN, npcs, lockers, startTrain, derail, endTrain, openCrate, openPanel, closePanel, inSafe, interact, updatePrompt, eventBanner, railPose, shoot, nearBody, lootBody, PAD, pollPad, SET, Q, setQ, applySettings, layoutInfo: () => layoutInfo, intMap: () => intMap, TILT, vehicles, VT, STAM, TRAFFIC, WALKERS, raidMem, melee, leavePlace, nearVehicle, heli: () => HELI, camps, LAMPS: () => LAMPS, NIGHT_LIT, nightLights, applySky, padTypeOf, LB, staminaUi, borrowTraffic, nearTraffic, updateHeli, YOURS: () => YOURS };
   function boot() { try { bootInner(); } catch (e) { reportErr(e, "while loading"); requestAnimationFrame(frame); } }
   function bootInner() {
-    computeSites(); buildWorld(); buildCar(); buildLife(); player.obj.rotation.order = "YXZ";
+    computeSites(); buildWorld(); buildCar(); buildLife(); player.obj.rotation.order = "YXZ"; applySettings(); prewarm();
     const hm = places[HOME_ID];
     player.pos.set(hm.exit.x, 0, hm.exit.z); player.yaw = Math.atan2(-hm.door.nx, -hm.door.nz); player.obj.position.copy(player.pos);
     respawnPatrols(); applySky(); updateHud(); ensureLabels();
@@ -3782,3 +3974,6 @@ const MAPDATA = {"hx":325,"hz":301,"b":[{"p":[[-72.1,-264.7],[-83.3,-254.5],[-92
   Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1500))]).then(boot, boot);
 })();
 </script>
+
+</body>
+</html>
