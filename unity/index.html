@@ -59,13 +59,14 @@
         updateBannerVisibility();
       }
 
+      var buildVersion = "fe26737"; // changes with every build so phones fetch the new files
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/WebBuild.loader.js";
+      var loaderUrl = buildUrl + "/WebBuild.loader.js" + "?v=" + buildVersion;
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/WebBuild.data.unityweb",
-        frameworkUrl: buildUrl + "/WebBuild.framework.js.unityweb",
-        codeUrl: buildUrl + "/WebBuild.wasm.unityweb",
+        dataUrl: buildUrl + "/WebBuild.data.unityweb" + "?v=" + buildVersion,
+        frameworkUrl: buildUrl + "/WebBuild.framework.js.unityweb" + "?v=" + buildVersion,
+        codeUrl: buildUrl + "/WebBuild.wasm.unityweb" + "?v=" + buildVersion,
         streamingAssetsUrl: "StreamingAssets",
 
         // If you have a custom web site structure, or want to place multiple Unity build instances on the same page,
