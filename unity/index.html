@@ -138,6 +138,7 @@
             loadingContainer.style.display = "none";
           }
         }).then((unityInstance) => {
+                window.unityInstance = unityInstance;   // lets automated browser tests call SmallTownTestHooks
                 document.querySelector("#unity-fullscreen-button").onclick = () => {
                   unityInstance.SetFullscreen(1);
                 };
